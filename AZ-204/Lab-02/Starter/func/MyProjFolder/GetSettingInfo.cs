@@ -1,25 +1,33 @@
+using System.Net;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
-namespace MyProjFolder
+namespace func
 {
     public class GetSettingInfo
     {
-        private readonly ILogger<GetSettingInfo> _logger;
+        private readonly ILogger _logger;
 
-        public GetSettingInfo(ILogger<GetSettingInfo> logger)
+        public GetSettingInfo(ILoggerFactory loggerFactory)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger<GetSettingInfo>();
         }
 
         [Function("GetSettingInfo")]
-        public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req, 
-            [BlobInput("content/settings.json", Connection = "AzureWebJobsStorage")] string blobContent)
+        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req, 
+            [BlobInput("content/settings.json", Connection = "AzureWebJobsStorage")] string blobContent
+            )
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
-            return new OkObjectResult($"Welcome to Azure Functions! \n {blobContent}");
+            _logger.LogInformation($"{blobContent}");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+            response.WriteStringAsync($"{blobContent}");
+
+            return response;
         }
     }
 }
